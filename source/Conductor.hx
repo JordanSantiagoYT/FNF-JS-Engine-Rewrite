@@ -21,25 +21,11 @@ class Conductor
 	public static var crochet:Float = ((60 / bpm) * 1000); // beats in milliseconds
 	public static var stepCrochet:Float = crochet / 4; // steps in milliseconds
 	public static var songPosition:Float=0;
+	public static var lastSongPos:Float;
 	public static var offset:Float = 0;
 
 	//public static var safeFrames:Int = 10;
-	// credits to duskiewhy for making this
 	public static var safeZoneOffset:Float = (ClientPrefs.safeFrames / 60) * 1000; // is calculated in create(), is safeFrames in milliseconds
-	public static var timeScale:Float = Conductor.safeZoneOffset / 180; //max hit window should be 180 right?
-	public static var ROWS_PER_BEAT = 48; // from Stepmania
-	public static var BEATS_PER_MEASURE = 4; // TODO: time sigs
-	public static var ROWS_PER_MEASURE = ROWS_PER_BEAT * BEATS_PER_MEASURE; // from Stepmania
-	public static var MAX_NOTE_ROW = 1 << 30; // from Stepmania
-
-	public inline static function beatToRow(beat:Float):Int
-		return Math.round(beat * ROWS_PER_BEAT);
-
-	public inline static function rowToBeat(row:Int):Float
-		return row / ROWS_PER_BEAT;
-
-	public inline static function secsToRow(sex:Float):Int
-		return Math.round(getBeat(sex) * ROWS_PER_BEAT);
 
 	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
 
@@ -47,15 +33,8 @@ class Conductor
 	{
 	}
 
-	public static function recalculateTimings()
+	public static function judgeNote(note:Note, diff:Float=0):Rating // die
 	{
-		Conductor.safeZoneOffset = Math.floor((ClientPrefs.safeFrames / 60) * 1000);
-		Conductor.timeScale = Conductor.safeZoneOffset / 180;
-	}
-
-	public static function judgeNote(note:Note, diff:Float=0, ?botplay:Bool = false, ?missedNote:Bool = false):Rating // die
-	{
-		if (botplay || missedNote) return PlayState.instance.ratingsData[0];
 		var data:Array<Rating> = PlayState.instance.ratingsData; //shortening cuz fuck u
 		for(i in 0...data.length-1) //skips last window (Shit)
 		{
@@ -183,7 +162,7 @@ class Rating
 	public var counter:String = '';
 	public var hitWindow:Null<Int> = 0; //ms
 	public var ratingMod:Float = 1;
-	public var score:Int = 500;
+	public var score:Int = 350;
 	public var noteSplash:Bool = true;
 
 	public function new(name:String)

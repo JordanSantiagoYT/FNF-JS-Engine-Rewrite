@@ -36,19 +36,12 @@ class OptimizationSubState extends BaseOptionsMenu
 		title = 'Optimization';
 		rpcTitle = 'Optimization Settings Menu'; //for Discord Rich Presence
 
-		//I'd suggest using "Chars & BG" as an example for making your own option since it is the simplest here
-		var option:Option = new Option('Chars & BG', //Name
-			'If unchecked, gameplay will only show the HUD.', //Description
-			'charsAndBG', //Save data variable name
+		//I'd suggest using "Enable GC" as an example for making your own option since it is the simplest here
+		var option:Option = new Option('Enable GC', //Name
+			"If checked, then the game will be allowed to garbage collect, reducing RAM usage I suppose.\nIf you experience memory leaks, turn this on, and\nif you experience lag with it on then turn it off.", //Description
+			'enableGC', //Save data variable name
 			'bool', //Variable type
-			true); //Default value
-		addOption(option);
-
-		var option:Option = new Option('Enable GC',
-			"If checked, then the game will be allowed to garbage collect, reducing RAM usage I suppose.\nIf you experience memory leaks, turn this on, and\nif you experience lag with it on then turn it off.",
-			'enableGC',
-			'bool',
-			false);
+			false); //Default value
 		addOption(option);
 
 		var option:Option = new Option('Light Opponent Strums',
@@ -65,13 +58,6 @@ class OptimizationSubState extends BaseOptionsMenu
 			true);
 		addOption(option);
 
-		var option:Option = new Option('Light Player Strums',
-			"If this is unchecked, then uh.. the player strums won't light up.\nit's as simple as that.",
-			'playerLightStrum',
-			'bool',
-			true);
-		addOption(option);
-
 		var option:Option = new Option('Show Ratings & Combo',
 			"If checked, shows the ratings & combo. Kinda defeats the purpose of this engine though...",
 			'ratesAndCombo',
@@ -79,25 +65,11 @@ class OptimizationSubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
-		var option:Option = new Option('Show Unused Combo Popup',
-			"If checked, shows the unused 'Combo' popup, ONLY when Botplay is inactive.",
-			'comboPopup',
+		var option:Option = new Option('Progressive Audio Loading', //Name
+			"If checked, audio will load as it's played instead of loading the entire audio.", //Description
+			'progAudioLoad',
 			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('Load Songs',
-			"If unchecked, PlayState songs won't be loaded.\n(Breaks a few of the Visuals & UI things, so be careful!)",
-			'songLoading',
-			'bool',
-			true);
-		addOption(option);
-
-		var option:Option = new Option('Even LESS Botplay Lag',
-			"Reduce Botplay lag even further.",
-			'lessBotLag',
-			'bool',
-			true);
+			false); //Don't turn this on by default
 		addOption(option);
 
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length-1]];

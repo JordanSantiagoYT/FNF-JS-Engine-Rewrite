@@ -181,11 +181,6 @@ class FreeplayState extends MusicBeatState
 			lastDifficultyName = CoolUtil.defaultDifficulty;
 		}
 		curDifficulty = Math.round(Math.max(0, CoolUtil.defaultDifficulties.indexOf(lastDifficultyName)));
-
-		if(curPlaying)
-		{
-			grpIcons.members[instPlaying].canBounce = true;
-		}
 		
 		changeSelection();
 		changeDiff();
@@ -285,8 +280,6 @@ class FreeplayState extends MusicBeatState
 	}
 
 	function regenerateSongs(?start:String = '') {
-		for (funnyIcon in grpIcons.members)
-			funnyIcon.canBounce = false;
 		curPlaying = false;
 
 		songs = [];
@@ -513,9 +506,6 @@ class FreeplayState extends MusicBeatState
 				vocals.volume = 0.7;
 				instPlaying = curSelected;
 				Conductor.changeBPM(PlayState.SONG.bpm);
-				for (funnyIcon in grpIcons.members)
-					funnyIcon.canBounce = false;
-				grpIcons.members[instPlaying].canBounce = true;
 				curPlaying = true;
 				#end
 
@@ -789,12 +779,7 @@ class FreeplayState extends MusicBeatState
 		diffText.x = Std.int(scoreBG.x + (scoreBG.width / 2));
 		diffText.x -= diffText.width / 2;
 	}
-	override function beatHit() {
-		super.beatHit();
 
-		if (curPlaying)
-			if (grpIcons.members[instPlaying].canBounce) grpIcons.members[instPlaying].bounce();
-	}
 	var _drawDistance:Int = 4;
 	var _lastVisibles:Array<Int> = [];
 	public function updateTexts(elapsed:Float = 0.0)

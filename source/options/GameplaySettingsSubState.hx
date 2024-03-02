@@ -63,14 +63,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			true);
 		addOption(option);
 
-		var option:Option = new Option('HP Gain Type:',
-			"Which engine's health gain do you want?",
-			'healthGainType',
-			'string',
-			'VS Impostor',
-			['VS Impostor', 'Kade (1.2)', 'Kade (1.4.2 to 1.6)', 'Kade (1.6+)', 'Doki Doki+', 'Psych Engine', 'Leather Engine']);
-		addOption(option);
-
 		var option:Option = new Option('Ghost Tapping',
 			"If checked, you won't get misses from pressing keys\nwhile there are no notes able to be hit.",
 			'ghostTapping',
@@ -85,126 +77,9 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			true);
 		addOption(option);
 
-		var option:Option = new Option('Score Affected by Combo',
-			"Should the score be affected by the combo?",
-			'comboScoreEffect',
-			'bool',
-			false);
-		addOption(option);
-
-	if (ClientPrefs.comboScoreEffect)
-	{
-		var option:Option = new Option('Combo Mult Type:',
-			"What type of combo multiplier do you want?",
-			'comboMultiType',
-			'string',
-			'osu!',
-			['osu!', 'Voiid Chronicles']);
-		addOption(option);
-
-		var option:Option = new Option('Combo Mult Limit: ', //Name
-			'What should the Combo Multiplier Limit be? \n(Values over 10 will not have score saving)', //Description
-			'comboMultLimit', //Save data variable name
-			'float', //Variable type
-			5); //Default value
-		option.scrollSpeed = 2;
-		option.minValue = 1;
-		option.maxValue = 100;
-		option.changeValue = 0.1;
-		option.displayFormat = '%vX';
-		addOption(option);
-	}
-
-		var option:Option = new Option('Complex Accuracy',
-			"If checked, accuracy is MS-based instead of rating-based.",
-			'complexAccuracy',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('Hold Note Hits',
-			"If checked, each piece of a hold note will also count as a note hit.",
-			'holdNoteHits',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('CommunityGame Mode',
-			"What do you think this does?",
-			'communityGameMode',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('CommunityGame Botplay Mode',
-			"If enabled, Botplay inputs will have varying delays, like if a human was playing. \n(Disables the 'Even LESS Botplay Lag' option, even if it's on)",
-			'communityGameBot',
-			'bool',
-			false);
-		addOption(option);
-
-		if (ClientPrefs.communityGameBot)
-		{
-		var option:Option = new Option('Max MS (CGBM)',
-			"How late can note hits be when CommunityGame Botplay Mode is enabled?",
-			'maxCGBMS',
-			'int',
-			45);
-		option.minValue = 0;
-		option.maxValue = 180;
-		option.displayFormat = '%v ms';
-		addOption(option);
-
-		var option:Option = new Option('Min MS (CGBM)',
-			"How early can note hits be when CommunityGame Botplay Mode is enabled?",
-			'minCGBMS',
-			'int',
-			-20);
-		option.minValue = -30;
-		option.maxValue = 0;
-		option.displayFormat = '%v ms';
-		addOption(option);
-		}
-
-		var option:Option = new Option('Beginning Sync',
-			"If checked, the game will resync the vocals for the first 500ms of a song.",
-			'startingSync',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('Resync Style:',
-			"What type of resync do you prefer?",
-			'resyncType',
-			'string',
-			'Leather',
-			['Leather', 'Psych']);
-		addOption(option);
-
-		var option:Option = new Option('Remove Perfect!! Judgement',
-			"If checked, removes the Perfect judgement.",
-			'noMarvJudge',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('Cool Gameplay',
-			"Get the COOLEST gameplay ever!!1!111!1!11",
-			'coolGameplay',
-			'bool',
-			false);
-		addOption(option);
-
 		var option:Option = new Option('Disable Reset Button',
 			"If checked, pressing Reset won't do anything.",
 			'noReset',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('Disable Chart Editor',
-			"If checked, disables the Chart Editor. Try opening it with this option enabled and see what happens!",
-			'antiCheatEnable',
 			'bool',
 			false);
 		addOption(option);
@@ -216,27 +91,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
-		var option:Option = new Option('More Max Health',
-			"If checked, increases your max health to 150% instead of 100%.",
-			'moreMaxHP',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('0% Limit on Practice',
-			"If checked, the health will stay at 0% if you lose all health in Practice mode.",
-			'zeroHealthLimit',
-			'bool',
-			false);
-		addOption(option);
-
-		var option:Option = new Option('More Spammable Inputs',
-			'If checked, the input system is more spammable.',
-			'ezSpam',
-			'bool',
-			false);
-		addOption(option);
-
 		var option:Option = new Option('Shit Gives Miss',
 			"If checked, hitting a Shit rating will count as a miss.",
 			'shitGivesMiss',
@@ -244,33 +98,11 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
-		var option:Option = new Option('SGM Intensity:',
-			"How intense would you want the threshold for missing from a rating to be?",
-			'ratingIntensity',
-			'string',
-			'Normal',
-			['Normal', 'Harsh', 'Very Harsh']);
-		addOption(option);
-
 		var option:Option = new Option('Enable Taunt Key',
 			"If checked, pressing the Taunt key will make BF go HEY!!",
 			'spaceVPose',
 			'bool',
 			true);
-		addOption(option);
-
-		var option:Option = new Option('Ghost Tapping Plays Anim',
-			"If checked, Ghost Tapping will play BF's animations.",
-			'ghostTapAnim',
-			'bool',
-			true);
-		addOption(option);
-
-		var option:Option = new Option('Enable Miss Sound',
-			"If checked, re-enables the miss sound when you miss a note.",
-			'missSoundShit',
-			'bool',
-			false);
 		addOption(option);
 
 		var option:Option = new Option('Hitsound Volume',
@@ -286,14 +118,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		option.decimals = 1;
 		option.onChange = onChangeHitsoundVolume;
 
-		var option:Option = new Option('Hitsound:',
-			"What type of hitsound would you like?",
-			'hitsoundType',
-			'string',
-			'osu!mania',
-			['osu!mania', 'Dave And Bambi', 'Indie Cross', 'Snap', 'Clap', 'Generic Click', 'Keyboard Click', 'vine boom', 'ADOFAI', 'Discord Ping', "i'm spongebob!", 'FIRE IN THE HOLE']);
-		addOption(option);
-
 		var option:Option = new Option('Rating Offset',
 			'Changes how late/early you have to hit for a "Sick!"\nHigher values mean you have to hit later.',
 			'ratingOffset',
@@ -305,17 +129,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		option.maxValue = 30;
 		addOption(option);
 
-		var option:Option = new Option('Perfect! Hit Window',
-			'Changes the amount of time you have\nfor hitting a "Perfect!" in milliseconds.',
-			'perfectWindow',
-			'int',
-			22);
-		option.displayFormat = '%vms';
-		option.scrollSpeed = 15;
-		option.minValue = 1;
-		option.maxValue = ClientPrefs.sickWindow - 1;
-		addOption(option);
-
 		var option:Option = new Option('Sick! Hit Window',
 			'Changes the amount of time you have\nfor hitting a "Sick!" in milliseconds.',
 			'sickWindow',
@@ -323,7 +136,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			45);
 		option.displayFormat = '%vms';
 		option.scrollSpeed = 15;
-		option.minValue = ClientPrefs.perfectWindow + 1;
+		option.minValue = 45;
 		option.maxValue = ClientPrefs.goodWindow - 1;
 		addOption(option);
 
