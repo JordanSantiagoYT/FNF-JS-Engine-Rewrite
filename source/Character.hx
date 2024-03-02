@@ -1,6 +1,7 @@
 package;
 
 import animateatlas.AtlasFrameMaker;
+import flixel.tweens.FlxEase;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.effects.FlxTrail;
@@ -33,6 +34,13 @@ typedef CharacterFile = {
 	var flip_x:Bool;
 	var no_antialiasing:Bool;
 	var healthbar_colors:Array<Int>;
+	var winning_colors:Array<Int>;
+	var losing_colors:Array<Int>;
+	var noteskin:String;
+
+	var health_drain:Bool;
+	var drain_amount:Float;
+	var drain_floor:Float;
 }
 
 typedef AnimArray = {
@@ -46,6 +54,7 @@ typedef AnimArray = {
 
 class Character extends FlxSprite
 {
+	public var mostRecentRow:Int = 0;
 	public var animOffsets:Map<String, Array<Dynamic>>;
 	public var debugMode:Bool = false;
 
@@ -55,6 +64,7 @@ class Character extends FlxSprite
 	public var colorTween:FlxTween;
 	public var holdTimer:Float = 0;
 	public var heyTimer:Float = 0;
+	var playState:PlayState;
 	public var specialAnim:Bool = false;
 	public var animationNotes:Array<Dynamic> = [];
 	public var stunned:Bool = false;
@@ -65,11 +75,20 @@ class Character extends FlxSprite
 
 	public var healthIcon:String = 'face';
 	public var animationsArray:Array<AnimArray> = [];
+	public var noteskin:String;
 
 	public var positionArray:Array<Float> = [0, 0];
 	public var cameraPosition:Array<Float> = [0, 0];
 
+	public var otherCharacters:Array<Character>;
+
 	public var hasMissAnimations:Bool = false;
+
+	public var isDeathCharacter:Bool = false;
+
+	public var healthDrain:Bool = false;
+	public var drainAmount:Float = 0;
+	public var drainFloor:Float = 0;
 
 	//Used on Character Editor
 	public var imageFile:String = '';
@@ -77,9 +96,11 @@ class Character extends FlxSprite
 	public var noAntialiasing:Bool = false;
 	public var originalFlipX:Bool = false;
 	public var healthColorArray:Array<Int> = [255, 0, 0];
+	public var winningColorArray:Array<Int> = [255, 0, 0];
+	public var losingColorArray:Array<Int> = [255, 0, 0];
 
 	public static var DEFAULT_CHARACTER:String = 'bf'; //In case a character is missing, it will use BF on its place
-	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false)
+	public function new(x:Float, y:Float, ?character:String = 'bf', ?isPlayer:Bool = false, ?isDeathCharacter:Bool = false)
 	{
 		super(x, y);
 
@@ -167,6 +188,7 @@ class Character extends FlxSprite
 						frames = AtlasFrameMaker.construct(json.image);
 				}
 				imageFile = json.image;
+				noteskin = json.noteskin;
 
 				if(json.scale != 1) {
 					jsonScale = json.scale;
@@ -185,8 +207,29 @@ class Character extends FlxSprite
 					noAntialiasing = true;
 				}
 
+				if(Std.string(json.health_drain).length > 0) {
+					healthDrain = json.health_drain;
+				} else healthDrain = false;
+
+				if(healthDrain) {
+					drainAmount = json.drain_amount;
+					drainFloor = json.drain_floor;
+				}
+				else {
+					drainAmount = 0.01;
+					drainFloor = 0.1;
+				}
+
 				if(json.healthbar_colors != null && json.healthbar_colors.length > 2)
 					healthColorArray = json.healthbar_colors;
+
+				if(json.winning_colors != null && json.winning_colors.length > 2)
+					winningColorArray = json.winning_colors;
+				else winningColorArray = healthColorArray;
+
+				if(json.losing_colors != null && json.losing_colors.length > 2)
+					losingColorArray = json.losing_colors;
+				else losingColorArray = healthColorArray;
 
 				antialiasing = !noAntialiasing;
 				if(!ClientPrefs.globalAntialiasing) antialiasing = false;
@@ -257,21 +300,21 @@ class Character extends FlxSprite
 	override function update(elapsed:Float)
 	{
 		if (ClientPrefs.ffmpegMode) elapsed = 1 / ClientPrefs.targetFPS;
-		if (!debugMode && animation.curAnim != null)
+		if(!debugMode && animation.curAnim != null)
 		{
 			if(heyTimer > 0)
 			{
 				heyTimer -= elapsed * PlayState.instance.playbackRate;
 				if(heyTimer <= 0)
 				{
-					if (specialAnim && animation.curAnim.name == 'hey' || animation.curAnim.name == 'cheer')
+					if(specialAnim && animation.curAnim.name == 'hey' || animation.curAnim.name == 'cheer')
 					{
 						specialAnim = false;
 						dance();
 					}
 					heyTimer = 0;
 				}
-			} else if (specialAnim && animation.curAnim.finished)
+			} else if(specialAnim && animation.curAnim.finished)
 			{
 				specialAnim = false;
 				dance();
@@ -294,19 +337,31 @@ class Character extends FlxSprite
 
 			if (!isPlayer)
 			{
-				if (animation.curAnim.name.startsWith('sing'))
-				{
-					holdTimer += elapsed;
-				}
+				if (!PlayState.opponentChart || curCharacter.startsWith('gf')) {
+					if (animation.curAnim.name.startsWith('sing'))
+					{
+						holdTimer += elapsed;
+					}
 
-				if (holdTimer >= Conductor.stepCrochet * (0.0011 / (FlxG.sound.music != null ? FlxG.sound.music.pitch : 1)) * singDuration)
-				{
-					dance();
-					holdTimer = 0;
-				}
+					if (holdTimer >= Conductor.stepCrochet * (0.0011 / (FlxG.sound.music != null ? FlxG.sound.music.pitch : 1)) * singDuration * (PlayState.instance != null ? PlayState.instance.singDurMult : 1))
+					{
+						dance();
+						holdTimer = 0;
+					}
+				} else {
+					if (animation.curAnim.name.startsWith('sing'))
+					{
+						holdTimer += elapsed;
+					}
+					else
+						holdTimer = 0;
+
+					if (animation.curAnim.name.endsWith('miss') && animation.curAnim.finished && !debugMode)
+						dance();
+					}
 			}
 
-			if (animation.curAnim.finished && animation.getByName(animation.curAnim.name + '-loop') != null)
+			if(animation.curAnim.finished && animation.getByName(animation.curAnim.name + '-loop') != null)
 			{
 				playAnim(animation.curAnim.name + '-loop');
 			}
@@ -343,7 +398,7 @@ class Character extends FlxSprite
 		specialAnim = false;
 		animation.play(AnimName, Force, Reversed, Frame);
 
-		var daOffset = animOffsets.get(AnimName);
+		final daOffset = animOffsets.get(AnimName);
 		if (animOffsets.exists(AnimName))
 		{
 			offset.set(daOffset[0], daOffset[1]);

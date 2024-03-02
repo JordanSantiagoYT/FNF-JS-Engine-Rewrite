@@ -68,8 +68,15 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			false); //Don't turn this on by default
 		addOption(option);
 
+		var option:Option = new Option('Progressive Audio Loading', //Name
+			"If checked, audio will load as it's played instead of loading the entire audio.", //Description
+			'progAudioLoad',
+			'bool',
+			false); //Don't turn this on by default
+		addOption(option);
+
 		var option:Option = new Option('Automatic Note Spawn Time', //Name
-			"If checked, the notes' spawn time will instead depend on the scroll speed. \nUseful if you don't want notes just spawning out of thin air. \nNOTE: Disable this if you use Lua Extra Keys!!", //Description
+			"If checked, the Notes' spawn time will instead depend on the scroll speed. \nUseful if you don't want notes just spawning out of thin air. \nNOTE: Disable this if you use Lua Extra Keys!!", //Description
 			'dynamicSpawnTime', //Save data variable name
 			'bool', //Variable type
 			true); //Default value
@@ -81,7 +88,7 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			'float', //Variable type
 			1); //Default value
 		option.scrollSpeed = 2;
-		option.minValue = 0.5; // You don't need 0.01 note spawn time.
+		option.minValue = 0.01;
 		option.maxValue = 10;
 		option.changeValue = 0.1;
 		option.displayFormat = '%vX';

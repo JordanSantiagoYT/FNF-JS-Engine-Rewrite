@@ -42,8 +42,15 @@ class VisualsUISubState extends BaseOptionsMenu
 		rpcTitle = 'Visuals & UI Settings Menu'; //for Discord Rich Presence
 
 		var option:Option = new Option('Note Splashes',
-			"If checked, hitting \"Sick!\" notes shows particles.",
+			"If unchecked, hitting \"Sick!\" notes won't show particles.",
 			'noteSplashes',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Opponent Note Splashes',
+			"If checked, opponent note hits will show particles.",
+			'oppNoteSplashes',
 			'bool',
 			true);
 		addOption(option);
@@ -55,9 +62,9 @@ class VisualsUISubState extends BaseOptionsMenu
 			true);
 		addOption(option);
 
-		var option:Option = new Option('Note Splash Limit: ',
+		var option:Option = new Option('Max Splashes: ',
 			"How many note splashes should be allowed on screen at the same time?\n(0 means no limit)",
-			'noteSplashLimit',
+			'maxSplashLimit',
 			'int',
 			16);
 
@@ -85,8 +92,15 @@ class VisualsUISubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
-		var option:Option = new Option("Taunt on \"GO!\"",
-			"If checked, the characters will taunt when the countdown says go before the song starts.",
+		var option:Option = new Option('Hide ScoreTxt',
+			'If checked, hides the score text. Dunno why you would enable this but eh, alright.',
+			'hideScore',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option("Taunt on 'GO'",
+			"If checked, the characters will taunt on GO when you play.",
 			'tauntOnGo',
 			'bool',
 			true);
@@ -95,6 +109,48 @@ class VisualsUISubState extends BaseOptionsMenu
 		var option:Option = new Option('Show Rendered Notes',
 			'If checked, the game will show how many notes are currently rendered on screen.',
 			'showRendered',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Showcase Mode',
+			'If checked, hides all the UI elements except for the time bar and notes\nand enables Botplay.',
+			'showcaseMode',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Show Maximum Score',
+			'If checked, the score text will show the highest score you can achieve\nif you were to have 100% accuracy throughout the song.',
+			'showMaxScore',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Time Text Bounce',
+			'If checked, the time bar text will bounce on every beat hit.',
+			'timeBounce',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('songLength Intro Animation',
+			'If checked, the song length will also have an intro animation.',
+			'lengthIntro',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Show Playback Speed on Time Bar',
+			'If checked, the timebar will also show the current Playback Speed you are playing at.',
+			'timebarShowSpeed',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Miss Rating',
+			"If unchecked, a Miss rating won't popup when you miss a note.",
+			'missRating',
 			'bool',
 			false);
 		addOption(option);
@@ -113,27 +169,120 @@ class VisualsUISubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
+		var option:Option = new Option('ScoreTxt Size: ',
+			"Sets the size of scoreTxt. Logically, higher values mean\nthe scoreTxt is bigger. If set to 0, then it will\nuse the default size for each HUD type.",
+			'scoreTxtSize',
+			'int',
+			'0');
+		addOption(option);
+
 		option.minValue = 0;
 		option.maxValue = 100;
 
-		var option:Option = new Option('Smooth Health',
+		var option:Option = new Option('Note Color Style: ',
+			"How would you like your notes colored?",
+			'noteColorStyle',
+			'string',
+			'Normal',
+			['Normal', 'Quant-Based', 'Char-Based', 'Grayscale', 'Rainbow']);
+		addOption(option);
+
+		var option:Option = new Option('Enable Note Colors',
+			'If unchecked, notes won\'t be able to use your currently set colors. \nI think this decreases loading time.',
+			'enableColorShader',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Icon Bop Trigger:',
+			"When would you like the icons to bop?",
+			'iconBopWhen',
+			'string',
+			'Every Beat',
+			['Every Beat', 'Every Note Hit']);
+		addOption(option);
+
+		var option:Option = new Option('Camera Note Movement',
+			"If checked, note hits will move the camera depending on which note you hit.",
+			'cameraPanning',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Camera Pan Intensity:', //Name
+			'Changes how much the camera pans when Camera Note Movement is turned on.', //Description
+			'panIntensity', //Save data variable name
+			'float', //Variable type
+			1); //Default value
+		option.scrollSpeed = 2;
+		option.minValue = 0.01;
+		option.maxValue = 10;
+		option.changeValue = 0.1;
+		option.displayFormat = '%vX';
+		addOption(option);
+
+		var option:Option = new Option('Rating Quotes',
+			"What should the rating names display?",
+			'rateNameStuff',
+			'string',
+			'Quotes',
+			['Quotes', 'Letters', 'Psych Quotes', 'Shaggyverse Quotes']);
+		addOption(option);
+
+		var option:Option = new Option('Golden Sick on MFC/SFC',
+			'If checked, your Sick! & Perfect!! ratings will be golden if your FC rating is better than GFC.',
+			'goldSickSFC',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Rating Accuracy Color',
+			'If checked, the ratings & combo will be colored based on the actual rating.',
+			'colorRatingHit',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Rating FC Colors',
+			'If checked, the ratings & combo will be colored based on your FC rating.',
+			'colorRatingFC',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Perfect Rating Color:',
+			"What should the Perfect Rating Color be?",
+			'marvRateColor',
+			'string',
+			'Golden',
+			['Golden', 'Rainbow']);
+		addOption(option);
+
+		var option:Option = new Option('Health Tweening',
 			"If checked, the health will adjust smoothly.",
 			'smoothHealth',
 			'bool',
 			true);
 		addOption(option);
+		
+		var option:Option = new Option('Health Tween Type:',
+			"How would you like your health tween to look like?",
+			'smoothHealthType',
+			'string',
+			'Golden Apple 1.5',
+			['Golden Apple 1.5', 'Indie Cross']);
+		addOption(option);
 
 		var option:Option = new Option('Smooth Health Bug',
-			'This was too cool to be removed, apparently.\nIf checked, the icons will be able to go past the normal boundaries of the health bar.',
+			'This was too cool to be removed, apparently.\nIf checked the icons will be able to go past the normal boundaries of the health bar.',
 			'smoothHPBug',
 			'bool',
 			false);
 		addOption(option);
 
-		var option:Option = new Option('Note Hit Offset Bug',
-			'If checked, the opponent\'s notes will be able to go past the strumline\'s hit time and still get hit, and the' +
-			'\nplayer strums will still have semi-transparent notes when the game lags (Mostly with rating popups because spawning a lot of them affects performance).',
-			'noteHitOffsetBug',
+		var option:Option = new Option('Denpa Engine Health Bug', //ill remove this at the request of AT - Jordan Santiago
+			'If checked, well.. replicates the health drain bug in Denpa Engine.',
+			'denpaDrainBug',
 			'bool',
 			false);
 		addOption(option);
@@ -144,13 +293,35 @@ class VisualsUISubState extends BaseOptionsMenu
 			'bool',
 			false);
 		addOption(option);
+
+		var option:Option = new Option('Double Note Ghosts',
+			"If this is checked, hitting a Double Note will show an afterimage, just like in VS Impostor!",
+			'doubleGhost',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Double Note Ghost Camera Zoom',
+			'If unchecked, Double Note Ghosts will not zoom when they activate during gameplay.',
+			'doubleGhostZoom',
+			'bool',
+			true);
+		addOption(option);
 		
 		var option:Option = new Option('Time Bar:',
 			"What should the Time Bar display?",
 			'timeBarType',
 			'string',
 			'Time Left',
-			['Time Left', 'Time Elapsed', 'Song Name', 'Disabled']);
+			['Time Left', 'Time Elapsed', 'Song Name', 'Modern Time', 'Song Name + Time', 'Time Left (No Bar)', 'Time Elapsed (No Bar)', 'Modern Time (No Bar)', 'Disabled']);
+		addOption(option);
+
+		var option:Option = new Option('HUD Type:',
+			"Which HUD would you like?",
+			'hudType',
+			'string',
+			'VS Impostor',
+			['VS Impostor', 'Kade Engine', 'Tails Gets Trolled V4', 'Dave and Bambi', 'Doki Doki+', 'Psych Engine', 'Leather Engine', 'Box Funkin', "Mic'd Up", 'JS Engine']);
 		addOption(option);
 
 		var option:Option = new Option('Strum Light Up Style:',
@@ -161,9 +332,84 @@ class VisualsUISubState extends BaseOptionsMenu
 			['Full Anim', 'BPM Based']);
 		addOption(option);
 
+		var option:Option = new Option('Note Style:',
+			"How would you like your notes to look like? \n(ANY NOTESTYLE OTHER THAN DEFAULT WILL OVERWRITE CHART SETTINGS AS WELL)",
+			'noteStyleThing',
+			'string',
+			'Default',
+			['Default', 'VS Nonsense V2', 'VS AGOTI', 'Doki Doki+', 'TGT V4', 'DNB 3D', 'Pink Circles', 'Chip', 'Future', 'Circle']);
+		addOption(option);
+
+		var option:Option = new Option('BF Icon Style:',
+			"How would you like your BF Icon to look like?",
+			'bfIconStyle',
+			'string',
+			'Default',
+			['Default', 'VS Nonsense V2', 'Leather Engine', 'Doki Doki+', "Mic'd Up", 'FPS Plus', 'SB Engine', "OS 'Engine'"]);
+		addOption(option);
+
+		var option:Option = new Option('Rating Style:',
+			"Which style for the rating popups would you like?",
+			'ratingType',
+			'string',
+			'Base FNF',
+			['Base FNF', 'Kade Engine', 'Tails Gets Trolled V4', 'Doki Doki+', 'NMCW', 'VS Impostor', 'FIRE IN THE HOLE', 'Simple']);
+		addOption(option);
+
+		var option:Option = new Option('Icon Bounce:',
+			"Which icon bounce would you like?",
+			'iconBounceType',
+			'string',
+			'Golden Apple',
+			['Golden Apple', 'Dave and Bambi', 'Old Psych', 'New Psych', 'VS Steve', 'Plank Engine', 'Strident Crisis', 'SB Engine']);
+		addOption(option);
+
+		var option:Option = new Option('Note Splash Type:',
+			"Which note splash would you like?",
+			'splashType',
+			'string',
+			'Psych Engine',
+			['Psych Engine', 'VS Impostor', 'Base Game', 'Doki Doki+', 'TGT V4', 'Indie Cross']);
+		addOption(option);
+
+		var option:Option = new Option('long ass health bar',
+			"If this is checked, the Health Bar will become LOOOOOONG",
+			'longHPBar',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Full FC Rating Name',
+			'If checked, the FC ratings will use their full name instead of their abbreviated form (so an SFC will become a Sick Full Combo).',
+			'longFCName',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Display Health Remaining',
+			"If checked, shows how much health you have remaining.",
+			'healthDisplay',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Opponent Note Hit Count',
+			"If checked, the rating counter will also show how many notes the opponent has hit.",
+			'opponentRateCount',
+			'bool',
+			true);
+		addOption(option);
+
+		var option:Option = new Option('Show MS Popup',
+			"If checked, hitting a note will also show how late/early you hit it.",
+			'showMS',
+			'bool',
+			false);
+		addOption(option);
+
 		var option:Option = new Option('Use Wrong Popup Camera',
 			'If checked, the popups will use the game world camera instead of the HUD.',
-			'showWrongPopupCameras',
+			'wrongCameras',
 			'bool',
 			false);
 		addOption(option);
@@ -190,6 +436,20 @@ class VisualsUISubState extends BaseOptionsMenu
 			true);
 		addOption(option);
 
+		var option:Option = new Option('Rating Counter',
+			"If checked, you can see how many Sicks, Goods, Bads, etc you've hit on the left.",
+			'ratingCounter',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Show Notes',
+			"If unchecked, the notes will be invisible. You can still play them though!",
+			'showNotes',
+			'bool',
+			true);
+		addOption(option);
+
 		var option:Option = new Option('Score Text Zoom on Hit',
 			"If unchecked, disables the Score text zooming\neverytime you hit a note.",
 			'scoreZoom',
@@ -208,6 +468,25 @@ class VisualsUISubState extends BaseOptionsMenu
 		option.changeValue = 0.1;
 		option.decimals = 1;
 		addOption(option);
+
+		var option:Option = new Option('Lane Underlay',
+			"If checked, a black line will appear behind the notes, making them easier to read.",
+			'laneUnderlay',
+			'bool',
+			false);
+		addOption(option);
+
+		var option:Option = new Option('Lane Underlay Transparency',
+			'How transparent do you want the lane underlay to be? (0% = transparent, 100% = fully opaque)',
+			'laneUnderlayAlpha',
+			'percent',
+			1);
+		option.scrollSpeed = 1.6;
+		option.minValue = 0.0;
+		option.maxValue = 1;
+		option.changeValue = 0.1;
+		option.decimals = 1;
+		addOption(option);
 		
 		#if !mobile
 		var option:Option = new Option('FPS Counter',
@@ -218,6 +497,13 @@ class VisualsUISubState extends BaseOptionsMenu
 		addOption(option);
 		option.onChange = onChangeFPSCounter;
 		#end
+
+		var option:Option = new Option('Random Botplay Text',
+			"Uncheck this if you don't want to be insulted when\nyou use Botplay.",
+			'randomBotplayText',
+			'bool',
+			true);
+		addOption(option);
 
 		var option:Option = new Option('Botplay Text Fading',
 			"If checked, the botplay text will do cool fading.",
@@ -281,6 +567,13 @@ class VisualsUISubState extends BaseOptionsMenu
 			false);
 		addOption(option);
 
+		var option:Option = new Option('NPS with Speed in Mind',
+			"If unchecked, the NPS won't have Playback Rate in mind.\n(Pretty dumb option to add, if you ask me!\nThat's why this is in the bottom of the Visuals & UI menu!)",
+			'npsWithSpeed',
+			'bool',
+			true);
+		addOption(option);
+
 		var option:Option = new Option('Main Menu Tips',
 			"If unchecked, hides those tips at the top in the main menu!",
 			'tipTexts',
@@ -316,8 +609,8 @@ class VisualsUISubState extends BaseOptionsMenu
 	var menuMusicChanged:Bool = false;
 	function onChangeMenuMusic()
 	{
-		if (ClientPrefs.daMenuMusic != 'Mashup') FlxG.sound.playMusic(Paths.music('freakyMenu-' + ClientPrefs.daMenuMusic));
-		if (ClientPrefs.daMenuMusic == 'Mashup') FlxG.sound.playMusic(Paths.music('freakyMenu'));
+			if (ClientPrefs.daMenuMusic != 'Mashup') FlxG.sound.playMusic(Paths.music('freakyMenu-' + ClientPrefs.daMenuMusic));
+			if (ClientPrefs.daMenuMusic == 'Mashup') FlxG.sound.playMusic(Paths.music('freakyMenu'));
 		menuMusicChanged = true;
 	}
 

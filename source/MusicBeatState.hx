@@ -48,8 +48,6 @@ class MusicBeatState extends FlxUIState
 		var skip:Bool = FlxTransitionableState.skipNextTransOut;
 		super.create();
 
-		Application.current.window.title = windowNamePrefix + windowNameSuffix + windowNameSuffix2; // Actually change the window title
-
 		if(!skip) {
 			openSubState(new CustomFadeTransition(0.7, true));
 		}
@@ -63,17 +61,20 @@ class MusicBeatState extends FlxUIState
 
 		updateCurStep();
 		updateBeat();
-		updateSection();
 
 		if (oldStep != curStep && curStep > 0)
 		{
 			stepHit();
-
-			// New system for beat hits and section hits.
 			if (curStep % 4 == 0)
 				beatHit(); //troll mode no longer breaks beats
-			if (curStep % 16 == 0)
-				sectionHit(); //troll mode no longer breaks sections
+
+			if(PlayState.SONG != null)
+			{
+				if (oldStep < curStep)
+					updateSection();
+				else
+					rollbackSection();
+			}
 		}
 
 		if(FlxG.save.data != null) FlxG.save.data.fullscreen = FlxG.fullscreen;
@@ -81,6 +82,7 @@ class MusicBeatState extends FlxUIState
 		FlxG.autoPause = ClientPrefs.autoPause;
 
 		super.update(elapsed);
+		Application.current.window.title = windowNamePrefix + windowNameSuffix + windowNameSuffix2;
 	}
 
 	private function updateSection():Void
@@ -89,11 +91,31 @@ class MusicBeatState extends FlxUIState
 		while(curStep >= stepsToDo)
 		{
 			curSection++;
-			var beats:Float = getBeatsOnSection();
+			final beats:Float = getBeatsOnSection();
 			stepsToDo += Math.round(beats * 4);
-			//sectionHit(); Don't uncomment this
+			sectionHit();
 		}
-		//trace(curSection); NO GOD WHY
+	}
+
+	private function rollbackSection():Void
+	{
+		if(curStep < 0) return;
+
+		final lastSection:Int = curSection;
+		curSection = 0;
+		stepsToDo = 0;
+		for (i in 0...PlayState.SONG.notes.length)
+		{
+			if (PlayState.SONG.notes[i] != null)
+			{
+				stepsToDo += Math.round(getBeatsOnSection() * 4);
+				if(stepsToDo > curStep) break;
+				
+				curSection++;
+			}
+		}
+
+		if(curSection > lastSection) sectionHit();
 	}
 
 	private function updateBeat():Void
@@ -109,9 +131,10 @@ class MusicBeatState extends FlxUIState
 		final shit = ((Conductor.songPosition - ClientPrefs.noteOffset) - lastChange.songTime) / lastChange.stepCrochet;
 		curDecStep = lastChange.stepTime + shit;
 		curStep = lastChange.stepTime + Math.floor(shit);
+		updateBeat();
 	}
 
-	override function startOutro(onOutroComplete:Void->Void):Void
+	override function startOutro(onOutroComplete:()->Void):Void
 	{
 		if (!FlxTransitionableState.skipNextTransIn)
 		{

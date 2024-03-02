@@ -94,8 +94,16 @@ class ChartingState extends MusicBeatState
 		['Play Animation', "Plays an animation on a Character,\nonce the animation is completed,\nthe animation changes to Idle\n\nValue 1: Animation to play.\nValue 2: Character (Dad, BF, GF)"],
 		['Camera Follow Pos', "Value 1: X\nValue 2: Y\n\nThe camera won't change the follow point\nafter using this, for getting it back\nto normal, leave both values blank."],
 		['Alt Idle Animation', "Sets a specified suffix after the idle animation name.\nYou can use this to trigger 'idle-alt' if you set\nValue 2 to -alt\n\nValue 1: Character to set (Dad, BF or GF)\nValue 2: New suffix (Leave it blank to disable)"],
+		['Enable Camera Bop', "Enables camera bopping. Useful if you don't want the\nopponent to hit a note, but you want camera bouncing."],
+		['Disable Camera Bop', "Same thing as 'Enable Camera Bopping', but disables it\ninstead."],
 		['Change Song Name', "Changes the song name to whatever value 1 is set to.\nIf value 1 is empty, the name will reset back to the original song name."],
+		['Rainbow Eyesore', "Flashing lights that might hurt your eyes,\nhence the name.\n\nValue 1: Step to end at\nValue 2: Speed"],
+		['Popup', "Value 1: Title\nValue 2: Message\nMakes a window popup with a message in it."],
+		['Popup (No Pause)', "Value 1: Title\nValue 2: Message\nSame as popup but without a pause."],
+		['Credits Popup', "Makes some credits pop up. \n\nValue 1: The title. \nValue 2: The composer(s)"],
 		['Screen Shake', "Value 1: Camera shake\nValue 2: HUD shake\n\nEvery value works as the following example: \"1, 0.05\".\nThe first number (1) is the duration.\nThe second number (0.05) is the intensity."],
+		['Camera Bopping', "Makes the camera do funny bopping\n\nValue 1: Bopping Speed (how many beats you want before it bops)\nValue 2: Bopping Intensity (how hard you want it to bop, default is 1)\n\nTo reset camera bopping, place a new event and put both values as '4' and '1' respectively."],
+		['Camera Twist', "Makes the camera spin!! or twist ig\nValue 1: Twist intensity\nValue 2: Twist intensity 2"],
 		['Change Note Multiplier', "Changes the amount of notes played every time you hit a note.\n\nValue 1: Note Multiplier that you want."],
 		['Fake Song Length', "Shows a fake song length on the time bar.\n\nValue 1: The fake length (in seconds)\nValue 2: Should it tween? (true = yes, anything else = no)\nTo reset the song length to normal, make Value 1 null."],
 		['Change Character', "Value 1: Character to change (Dad, BF, GF)\nValue 2: New character's name"],
@@ -259,6 +267,11 @@ class ChartingState extends MusicBeatState
 				player2: 'dad',
 				gfVersion: 'gf',
 				songCredit: '',
+				songCreditBarPath: '',
+				songCreditIcon: '',
+				windowName: '',
+				event7: '',
+				event7Value: '',
 				speed: 1,
 				stage: 'stage',
 				validScore: false,
@@ -289,7 +302,7 @@ class ChartingState extends MusicBeatState
 		lilStage.scrollFactor.set();
 		add(lilStage);
 
-		lilBf = new FlxSprite(32, 432).loadGraphic(Paths.image("chartEditor/lilBf"), true, 300, 256);
+		lilBf = new FlxSprite(32, 432).loadGraphic(Paths.image(ClientPrefs.noteColorStyle == 'Normal' ? "chartEditor/lilBf" : "chartEditor/lilBfRed"), true, 300, 256);
 		lilBf.animation.add("idle", [0, 1], 12, true);
 		lilBf.animation.add("0", [3, 4, 5], 12, false);
 		lilBf.animation.add("1", [6, 7, 8], 12, false);
@@ -307,7 +320,7 @@ class ChartingState extends MusicBeatState
 		lilBuddiesColorSwap = new ColorSwap();
 		lilBuddies2ColorSwap = new ColorSwap();
 		lilBf.shader = lilBuddiesColorSwap.shader;
-		lilOpp = new FlxSprite(32, 432).loadGraphic(Paths.image("chartEditor/lilOpp"), true, 300, 256);
+		lilOpp = new FlxSprite(32, 432).loadGraphic(Paths.image(ClientPrefs.noteColorStyle == 'Normal' ? "chartEditor/lilOpp" : "chartEditor/lilOppRed"), true, 300, 256);
 		lilOpp.animation.add("idle", [0, 1], 12, true);
 		lilOpp.animation.add("0", [3, 4, 5], 12, false);
 		lilOpp.animation.add("1", [6, 7, 8], 12, false);
@@ -428,6 +441,7 @@ class ChartingState extends MusicBeatState
 			{name: "Note", label: 'Note'},
 			{name: "Events", label: 'Events'},
 			{name: "Charting", label: 'Charting'},
+			{name: "Data", label: 'Data'},
 			{name: "Note Spamming", label: 'Note Spamming'},
 		];
 
@@ -484,6 +498,7 @@ class ChartingState extends MusicBeatState
 		addEventsUI();
 		addChartingUI();
 		addNoteStackingUI();
+		addSongDataUI();
 		updateHeads();
 		updateWaveform();
 		//UI_box.selected_tab = 4;
@@ -805,23 +820,51 @@ class ChartingState extends MusicBeatState
 		tab_group_song.add(player1DropDown);
 		tab_group_song.add(stageDropDown);
 
-		creditInputText = new FlxUIInputText(noteSkinInputText.x + (noteSkinInputText.width + 6), noteSplashesInputText.y, 120, _song.songCredit, 8);
-		blockPressWhileTypingOn.push(creditInputText);
-		creditInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
-
-		tab_group_song.add(creditInputText);
-		tab_group_song.add(new FlxText(creditInputText.x, creditInputText.y - 15, 0, 'Song Credit:'));
-
 		UI_box.addGroup(tab_group_song);
 
 		FlxG.camera.follow(camPos);
 	}
 
-	function songJsonPopup() { //you tried reloading the json, but it doesn't exist
-		CoolUtil.coolError("The engine failed to load the JSON! \nEither it doesn't exist, or the name doesn't match with the one you're putting?", "JS Engine Anti-Crash Tool");
-	}
+		function songJsonPopup() { //you tried reloading the json, but it doesn't exist
+			CoolUtil.coolError("The engine failed to load the JSON! \nEither it doesn't exist, or the name doesn't match with the one you're putting?", "JS Engine Anti-Crash Tool");
+		}
 
 	var creditInputText:FlxUIInputText;
+	var creditPathInputText:FlxUIInputText;
+	var creditIconInputText:FlxUIInputText;
+	var winNameInputText:FlxUIInputText;
+	function addSongDataUI():Void //therell be more added here later
+	{
+		var tab_group_songdata = new FlxUI(null, UI_box);
+		tab_group_songdata.name = "Data";
+
+		creditInputText = new FlxUIInputText(10, 30, 100, _song.songCredit, 8);
+		blockPressWhileTypingOn.push(creditInputText);
+		creditInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+
+		creditPathInputText = new FlxUIInputText(10, 60, 100, _song.songCreditBarPath, 8);
+		blockPressWhileTypingOn.push(creditPathInputText);
+		creditPathInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+
+		creditIconInputText = new FlxUIInputText(10, 90, 100, _song.songCreditIcon, 8);
+		blockPressWhileTypingOn.push(creditIconInputText);
+		creditIconInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+
+		winNameInputText = new FlxUIInputText(10, 120, 100, _song.windowName, 8);
+		blockPressWhileTypingOn.push(winNameInputText);
+		winNameInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+
+		tab_group_songdata.add(creditInputText);
+		tab_group_songdata.add(creditPathInputText);
+		tab_group_songdata.add(creditIconInputText);
+		tab_group_songdata.add(new FlxText(creditInputText.x, creditInputText.y - 15, 0, 'Song Credit:'));
+		tab_group_songdata.add(new FlxText(creditPathInputText.x, creditPathInputText.y - 15, 0, 'Credit Bar Path:'));
+		tab_group_songdata.add(new FlxText(creditIconInputText.x, creditIconInputText.y - 15, 0, 'Credit Icon:'));
+		tab_group_songdata.add(winNameInputText);
+		tab_group_songdata.add(new FlxText(winNameInputText.x, winNameInputText.y - 15, 0, 'Window Name:'));
+
+		UI_box.addGroup(tab_group_songdata);
+	}
 
 	var stepperBeats:FlxUINumericStepper;
 	var check_mustHitSection:FlxUICheckBox;
@@ -997,8 +1040,9 @@ class ChartingState extends MusicBeatState
 			if(value == 0) return;
 
 			var daSec = FlxMath.maxInt(curSec, value);
+			if (_song.notes[daSec - value] == null || _song.notes[daSec] == null) return;
 
-			if (check_notesSec.checked)
+			if (check_notesSec.checked && _song.notes[daSec - value] != null)
 			{
 				for (note in _song.notes[daSec - value].sectionNotes)
 				{
@@ -1010,7 +1054,7 @@ class ChartingState extends MusicBeatState
 				}
 			}
 
-			if (check_eventsSec.checked)
+			if (check_eventsSec.checked && _song.notes[daSec - value] != null)
 			{
 				var startThing:Float = sectionStartTime(-value);
 				var endThing:Float = sectionStartTime(-value + 1);
@@ -1438,6 +1482,8 @@ class ChartingState extends MusicBeatState
 	var eventDropDown:FlxUIDropDownMenuCustom;
 	var descText:FlxText;
 	var selectedEventText:FlxText;
+	var event7DropDown:FlxUIDropDownMenuCustom;
+	var event7InputText:FlxUIInputText;
 	function addEventsUI():Void
 	{
 		var tab_group_event = new FlxUI(null, UI_box);
@@ -1506,6 +1552,18 @@ class ChartingState extends MusicBeatState
 		value2InputText = new FlxUIInputText(20, 150, 100, "");
 		blockPressWhileTypingOn.push(value2InputText);
 		value2InputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+
+		var pressing7Events:Array<String> = ['---', 'None', 'Game Over', 'Go to Song', 'Close Game', 'Play Video'];
+
+		event7DropDown = new FlxUIDropDownMenuCustom(160, 300, FlxUIDropDownMenuCustom.makeStrIdLabelArray(pressing7Events, true), function(pressed:String) {
+			trace('event pressed 1');
+			var whatIsIt:Int = Std.parseInt(pressed);
+			var arraySelectedShit:String = pressing7Events[whatIsIt];
+			_song.event7 = arraySelectedShit;
+		});
+		event7DropDown.selectedLabel = _song.event7;
+		var text:FlxText = new FlxText(160, 280, 0, "7 Event:");
+		tab_group_event.add(text);
 
 		// New event buttons
 		var removeButton:FlxButton = new FlxButton(eventDropDown.x + eventDropDown.width + 10, eventDropDown.y, '-', function()
@@ -1582,6 +1640,13 @@ class ChartingState extends MusicBeatState
 		selectedEventText.alignment = CENTER;
 		tab_group_event.add(selectedEventText);
 
+		event7InputText = new FlxUIInputText(160, event7DropDown.y + 40, 100, _song.event7Value);
+		blockPressWhileTypingOn.push(event7InputText);
+		event7InputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
+		blockPressWhileScrolling.push(event7DropDown);
+
+		tab_group_event.add(event7DropDown);
+		tab_group_event.add(event7InputText);
 		tab_group_event.add(descText);
 		tab_group_event.add(value1InputText);
 		tab_group_event.add(value2InputText);
@@ -2048,7 +2113,20 @@ class ChartingState extends MusicBeatState
 		_song.song = UI_songTitle.text;
 
 		_song.songCredit = creditInputText.text;
-		copyMultiSectButton.text = "Copy from the last " + Std.int(CopyLastSectionCount.value) + " to the next " + Std.int(CopyFutureSectionCount.value) + " sections, " + Std.int(CopyLoopCount.value) + " times";
+		_song.songCreditIcon = creditIconInputText.text;
+		_song.songCreditBarPath = creditPathInputText.text;
+
+		_song.windowName = winNameInputText.text;
+
+		if (event7InputText.text == null || event7InputText.text ==  '') {
+			_song.event7Value = null;
+		}
+		else
+			{
+				_song.event7Value = event7InputText.text;
+			}
+
+			copyMultiSectButton.text = "Copy from the last " + Std.int(CopyLastSectionCount.value) + " to the next " + Std.int(CopyFutureSectionCount.value) + " sections, " + Std.int(CopyLoopCount.value) + " times";
 
 		strumLineUpdateY();
 		for (i in 0...8){
@@ -2207,6 +2285,12 @@ class ChartingState extends MusicBeatState
 
 		if (!blockInput)
 		{
+			if (FlxG.keys.justPressed.ESCAPE)
+			{
+				autosaveSong();
+				LoadingState.loadAndSwitchState(() -> new editors.EditorPlayState(sectionStartTime()));
+				if (idleMusic != null && idleMusic.music != null) idleMusic.destroy();
+			}
 			if (FlxG.keys.justPressed.ENTER)
 			{
 				if (CoolUtil.getNoteAmount(_song) <= 1000000) autosaveSong();
@@ -2648,8 +2732,11 @@ class ChartingState extends MusicBeatState
 					var data:Int = note.noteData % 4;
 					var noteDataToCheck:Int = note.noteData;
 					if(noteDataToCheck > -1 && note.mustPress != _song.notes[curSec].mustHitSection) noteDataToCheck += 4;
-					strumLineNotes.members[noteDataToCheck].playAnim('confirm', true);
-					strumLineNotes.members[noteDataToCheck].resetAnim = ((note.sustainLength / 1000) + 0.15) / playbackSpeed;
+					if ((ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader) && vortex)
+						strumLineNotes.members[noteDataToCheck].playAnim('confirm', true, note.colorSwap.hue, note.colorSwap.saturation, note.colorSwap.brightness);
+					else
+						strumLineNotes.members[noteDataToCheck].playAnim('confirm', true);
+						strumLineNotes.members[noteDataToCheck].resetAnim = ((note.sustainLength / 1000) + 0.15) / playbackSpeed;
 					if(!playedSound[data]) {
 						if((playSoundBf.checked && note.mustPress) || (playSoundDad.checked && !note.mustPress)) {
 							if(_song.player1 == 'gf') { //Easter egg
@@ -2663,11 +2750,29 @@ class ChartingState extends MusicBeatState
 						}
 
 						data = note.noteData;
-						if (lilBuddiesBox.checked) {
-							if (note.mustPress) lilBf.animation.play(Std.string(data % 4), true);
-							else lilOpp.animation.play(Std.string(data % 4), true);
+						if (note.mustPress && lilBuddiesBox.checked) {
+						if (ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader) 
+						{
+						lilBuddiesColorSwap.hue = note.colorSwap.hue;
+						lilBuddiesColorSwap.saturation = note.colorSwap.saturation;
+						lilBuddiesColorSwap.brightness = note.colorSwap.brightness;
 						}
-						if (note.mustPress != _song.notes[curSec].mustHitSection) data += 4;
+						lilBf.animation.play("" + (data % 4), true);
+						}
+						if (!note.mustPress && lilBuddiesBox.checked) 
+						{
+							if (ClientPrefs.enableColorShader || ClientPrefs.showNotes && ClientPrefs.enableColorShader) 
+							{
+							lilBuddies2ColorSwap.hue = note.colorSwap.hue;
+							lilBuddies2ColorSwap.saturation = note.colorSwap.saturation;
+							lilBuddies2ColorSwap.brightness = note.colorSwap.brightness;
+							}
+						lilOpp.animation.play("" + (data % 4), true);
+						}
+						if(note.mustPress != _song.notes[curSec].mustHitSection)
+						{
+							data += 4;
+						}
 					}
 				}
 			}
@@ -3385,7 +3490,7 @@ class ChartingState extends MusicBeatState
 		var daStrumTime = i[0];
 		var daSus:Dynamic = i[2];
 
-		var note:Note = new Note(daStrumTime, daNoteInfo % 4, null, false, true);
+		var note:Note = new Note(daStrumTime, daNoteInfo % 4, null, null, null, false, true);
 		if(daSus != null) { //Common note
 			if(!Std.isOfType(i[3], String)) //Convert old note type to new note type format
 			{
@@ -3447,14 +3552,25 @@ class ChartingState extends MusicBeatState
 		if(height < minHeight) height = minHeight;
 		if(height < 1) height = 1; //Prevents error of invalid height
 
+		var colorSwap = new ColorSwap();
+		var shader = colorSwap.shader;
+
 		var colorList:Array<String> = ['c24b99', '00ffff', '12fa05', 'f9393f'];
 		if (PlayState.isPixelStage) colorList = ['e276ff', '3dcaff', '71e300', 'ff884e'];
+		var susColor:Int = Std.parseInt('0xff' + colorList[note.noteData]);
 
 		var hueColor = ClientPrefs.arrowHSV[note.noteData][0] / 360;
 		var saturationColor = ClientPrefs.arrowHSV[note.noteData][1] / 100;
 		var brightnessColor = ClientPrefs.arrowHSV[note.noteData][2] / 100;
+		if (note.noteType == "Hurt Note") susColor = CoolUtil.dominantColor(note); //Make black if hurt note
 
-		var spr:FlxSprite = new FlxSprite(note.x + (GRID_SIZE * 0.5) - 4, note.y + GRID_SIZE / 2).makeGraphic(8, height, Std.parseInt('0xff' + colorList[note.noteData]));
+		var spr:FlxSprite = new FlxSprite(note.x + (GRID_SIZE * 0.5) - 4, note.y + GRID_SIZE / 2).makeGraphic(8, height, susColor);
+		if (note.noteType != 'Hurt Note') {
+			spr.shader = colorSwap.shader;
+			colorSwap.hue = hueColor;
+			colorSwap.saturation = saturationColor;
+			colorSwap.brightness = brightnessColor;
+		}
 		return spr;
 	}
 
@@ -3917,6 +4033,7 @@ class AttachedFlxText extends FlxText
 
 class SelectionNote extends FlxSprite
 {
+	public var colorSwap:ColorSwap;
 	public var resetAnim:Float = 0;
 	public var noteData:Int = 0;
 	public var size:Int = 40;
@@ -3931,6 +4048,8 @@ class SelectionNote extends FlxSprite
 	}
 
 	public function new(x:Float, y:Float, leData:Int) {
+		colorSwap = new ColorSwap();
+		shader = colorSwap.shader;
 		noteData = leData;
 		super(x, y);
 
@@ -3952,18 +4071,18 @@ class SelectionNote extends FlxSprite
 			antialiasing = false;
 			setGraphicSize(size, size);
 
-			animation.add('static0', [0]);
-			animation.add('pressed0', [4, 8], 12, false);
-			animation.add('confirm0', [12, 16], 24, false);
-			animation.add('static1', [1]);
-			animation.add('pressed1', [5, 9], 12, false);
-			animation.add('confirm1', [13, 17], 24, false);
-			animation.add('static2', [2]);
-			animation.add('pressed2', [6, 10], 12, false);
-			animation.add('confirm2', [14, 18], 12, false);
-			animation.add('static3', [3]);
-			animation.add('pressed3', [7, 11], 12, false);
-			animation.add('confirm3', [15, 19], 24, false);
+					animation.add('static0', [0]);
+					animation.add('pressed0', [4, 8], 12, false);
+					animation.add('confirm0', [12, 16], 24, false);
+					animation.add('static1', [1]);
+					animation.add('pressed1', [5, 9], 12, false);
+					animation.add('confirm1', [13, 17], 24, false);
+					animation.add('static2', [2]);
+					animation.add('pressed2', [6, 10], 12, false);
+					animation.add('confirm2', [14, 18], 12, false);
+					animation.add('static3', [3]);
+					animation.add('pressed3', [7, 11], 12, false);
+					animation.add('confirm3', [15, 19], 24, false);
 		}
 		else
 		{
@@ -3972,18 +4091,18 @@ class SelectionNote extends FlxSprite
 			antialiasing = ClientPrefs.globalAntialiasing;
 			setGraphicSize(size, size);
 
-			animation.addByPrefix('static0', 'arrowLEFT');
-			animation.addByPrefix('pressed0', 'left press', 24, false);
-			animation.addByPrefix('confirm0', 'left confirm', 24, false);
-			animation.addByPrefix('static1', 'arrowDOWN');
-			animation.addByPrefix('pressed1', 'down press', 24, false);
-			animation.addByPrefix('confirm1', 'down confirm', 24, false);
-			animation.addByPrefix('static2', 'arrowUP');
-			animation.addByPrefix('pressed2', 'up press', 24, false);
-			animation.addByPrefix('confirm2', 'up confirm', 24, false);
-			animation.addByPrefix('static3', 'arrowRIGHT');
-			animation.addByPrefix('pressed3', 'right press', 24, false);
-			animation.addByPrefix('confirm3', 'right confirm', 24, false);
+					animation.addByPrefix('static0', 'arrowLEFT');
+					animation.addByPrefix('pressed0', 'left press', 24, false);
+					animation.addByPrefix('confirm0', 'left confirm', 24, false);
+					animation.addByPrefix('static1', 'arrowDOWN');
+					animation.addByPrefix('pressed1', 'down press', 24, false);
+					animation.addByPrefix('confirm1', 'down confirm', 24, false);
+					animation.addByPrefix('static2', 'arrowUP');
+					animation.addByPrefix('pressed2', 'up press', 24, false);
+					animation.addByPrefix('confirm2', 'up confirm', 24, false);
+					animation.addByPrefix('static3', 'arrowRIGHT');
+					animation.addByPrefix('pressed3', 'right press', 24, false);
+					animation.addByPrefix('confirm3', 'right confirm', 24, false);
 		}
 		updateHitbox();
 
@@ -4001,7 +4120,11 @@ class SelectionNote extends FlxSprite
 		if(resetAnim > 0) {
 			resetAnim -= elapsed;
 			if(resetAnim <= 0) {
-				playAnim('static' + noteData);
+				playAnim('static' + noteData);	
+				if (ClientPrefs.enableColorShader)
+				{
+           				if (ClientPrefs.noteColorStyle != 'Char-Based') resetHue();
+				}
 				resetAnim = 0;
 			}
 		}
@@ -4012,5 +4135,35 @@ class SelectionNote extends FlxSprite
 		animation.play(anim, force);
 		centerOffsets();
 		centerOrigin();
+		if(animation.curAnim == null || animation.curAnim.name == 'static' + noteData && ClientPrefs.enableColorShader) {
+			colorSwap.hue = 0;
+			colorSwap.saturation = 0;
+			colorSwap.brightness = 0;
+		} else {
+			if (noteData > -1 && noteData < ClientPrefs.arrowHSV.length && ClientPrefs.enableColorShader)
+			{
+				if (ClientPrefs.noteColorStyle == 'Normal')
+				{
+					colorSwap.hue = ClientPrefs.arrowHSV[noteData][0] / 360;
+					colorSwap.saturation = ClientPrefs.arrowHSV[noteData][1] / 100;
+					colorSwap.brightness = ClientPrefs.arrowHSV[noteData][2] / 100;
+				}
+				if (ClientPrefs.noteColorStyle == 'Quant-Based' || ClientPrefs.noteColorStyle == 'Rainbow')
+				{
+					colorSwap.hue = hue;
+					colorSwap.saturation = sat;
+					colorSwap.brightness = brt;
+				}
+			}
+			if(animation.curAnim.name == 'confirm' + noteData && !PlayState.isPixelStage) {
+				centerOrigin();
+			}
+		}
+	}
+	public function resetHue() {
+  	// Reset the hue value to 0 (or any desired value)
+    	colorSwap.hue = 0;
+    	colorSwap.saturation = 0;
+    	colorSwap.brightness = 0;
 	}
 }

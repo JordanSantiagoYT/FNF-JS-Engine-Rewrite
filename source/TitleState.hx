@@ -87,16 +87,19 @@ class TitleState extends MusicBeatState
 
 	override public function create():Void
 	{
-		MusicBeatState.windowNameSuffix = " - Title Screen";
-
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
+
+		MusicBeatState.windowNameSuffix = " - Title Screen";
+
+		MusicBeatState.windowNameSuffix = "";
 
 		#if LUA_ALLOWED
 		Paths.pushGlobalMods();
 		#end
 		// Just to load a mod on start up if ya got one. For mods that change the menu music and bg
 		WeekData.loadTheFirstEnabledMod();
+		MusicBeatState.windowNamePrefix = Assets.getText(Paths.txt("windowTitleBase", "preload"));
 
 		//trace(path, FileSystem.exists(path));
 		/*#if (polymod && !html5)

@@ -37,10 +37,13 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private var checkboxGroup:FlxTypedGroup<CheckboxThingie>;
 	private var grpTexts:FlxTypedGroup<AttachedText>;
+	public static var inThePauseMenu:Bool = false;
 	public var pauseState:PauseSubState;
 
 	function getOptions()
 	{
+		var skip:Bool = inThePauseMenu;
+
 		var goption:GameplayOption = new GameplayOption('Scroll Type', 'scrolltype', 'string', 'multiplicative', ["multiplicative", "constant"]);
 		optionsArray.push(goption);
 
@@ -102,11 +105,62 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 
 		var option:GameplayOption = new GameplayOption('Practice Mode', 'practice', 'bool', false);
 		optionsArray.push(option);
+		option.onChange = onChangePractice; //Changing onChange is only needed if you want to make a special interaction after it changes the value
 
 		var option:GameplayOption = new GameplayOption('Botplay', 'botplay', 'bool', false);
 		optionsArray.push(option);
+		option.onChange = onChangeBotplay; //Changing onChange is only needed if you want to make a special interaction after it changes the value
+
+		var option:GameplayOption = new GameplayOption('Play as Opponent', 'opponentplay', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Opponent Health Drain', 'opponentdrain', 'bool', false);
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Health Drain Level: ', 'drainlevel', 'float', 1);
+		option.scrollSpeed = 2;
+		option.minValue = -1;
+		option.maxValue = 10;
+		option.changeValue = 0.1;
+		option.displayFormat = '%vX';
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Random Mode', 'randommode', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Stair Mode', 'stairmode', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Wave Mode', 'wavemode', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+	
+		var option:GameplayOption = new GameplayOption('Flip Mode', 'flip', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('One Key', 'onekey', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Jack Amount: ', 'jacks', 'float', 0);
+		option.onChange = onChangeChartOption;
+		option.scrollSpeed = 6;
+		option.minValue = 0;
+		option.maxValue = 100;
+		option.changeValue = 1;
+		option.displayFormat = '%v';
+		optionsArray.push(option);
+
+		var option:GameplayOption = new GameplayOption('Random Playback Rate', 'randomspeed', 'bool', false);
+		option.onChange = onChangeChartOption;
+		optionsArray.push(option);
 
 		var option:GameplayOption = new GameplayOption('Troll Mode', 'thetrollingever', 'bool', false);
+		option.onChange = onChangeChartOption;
 		optionsArray.push(option);
 	}
 
@@ -176,6 +230,14 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		reloadCheckboxes();
 
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+	}
+
+	override function destroy() {
+		if (inThePauseMenu)  {
+			PlayState.instance.changeTheSettingsBitch();
+			inThePauseMenu = false;
+		}
+		super.destroy();
 	}
 
 	var nextAccept:Int = 5;
@@ -385,6 +447,31 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 			FlxG.sound.play(Paths.sound('scrollMenu'));
 		}
 		holdTime = 0;
+	}
+
+	function onChangePractice()
+	{
+		if(inThePauseMenu)
+		{
+			trace ("you really thought you would get away with it, invalidated your score");
+			PlayState.playerIsCheating = true;
+		}
+	}
+	function onChangeChartOption()
+	{
+		if(inThePauseMenu)
+		{
+			trace ("HEY! You changed an option that requires a chart restart!");
+			PauseSubState.requireRestart = true;
+		}
+	}
+	function onChangeBotplay()
+	{
+		if(inThePauseMenu)
+		{
+			trace ("you really thought you would get away with it, invalidated your score");
+			PlayState.playerIsCheating = true;
+		}
 	}
 	
 	function changeSelection(change:Int = 0)

@@ -98,10 +98,9 @@ class GameRendererSettingsSubState extends BaseOptionsMenu
 		
 		super();
 	}
-
 	function onChangeFramerate()
 	{
-		fpsOption.scrollSpeed = 1;
+		fpsOption.scrollSpeed = fpsOption.getValue() / 2;
 	}
 
 	function resetTimeScale()

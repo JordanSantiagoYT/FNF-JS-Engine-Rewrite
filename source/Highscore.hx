@@ -7,12 +7,12 @@ using StringTools;
 class Highscore
 {
 	#if (haxe >= "4.0.0")
-	public static var weekScores:Map<String, Float> = new Map();
-	public static var songScores:Map<String, Float> = new Map();
+	public static var weekScores:Map<String, Int> = new Map();
+	public static var songScores:Map<String, Int> = new Map();
 	public static var songRating:Map<String, Float> = new Map();
 	#else
-	public static var weekScores:Map<String, Float> = new Map();
-	public static var songScores:Map<String, Float> = new Map<String, Float>();
+	public static var weekScores:Map<String, Int> = new Map();
+	public static var songScores:Map<String, Int> = new Map<String, Int>();
 	public static var songRating:Map<String, Float> = new Map<String, Float>();
 	#end
 
@@ -46,7 +46,7 @@ class Highscore
 		return newValue / tempMult;
 	}
 
-	public static function saveScore(song:String, score:Float = 0, ?diff:Int = 0, ?rating:Float = -1):Void
+	public static function saveScore(song:String, score:Int = 0, ?diff:Int = 0, ?rating:Float = -1):Void
 	{
 		var daSong:String = formatSong(song, diff);
 
@@ -62,7 +62,7 @@ class Highscore
 		}
 	}
 
-	public static function saveWeekScore(week:String, score:Float = 0, ?diff:Int = 0):Void
+	public static function saveWeekScore(week:String, score:Int = 0, ?diff:Int = 0):Void
 	{
 		var daWeek:String = formatSong(week, diff);
 
@@ -78,14 +78,14 @@ class Highscore
 	/**
 	 * YOU SHOULD FORMAT SONG WITH formatSong() BEFORE TOSSING IN SONG VARIABLE
 	 */
-	static function setScore(song:String, score:Float):Void
+	static function setScore(song:String, score:Int):Void
 	{
 		// Reminder that I don't need to format this song, it should come formatted!
 		songScores.set(song, score);
 		FlxG.save.data.songScores = songScores;
 		FlxG.save.flush();
 	}
-	static function setWeekScore(week:String, score:Float):Void
+	static function setWeekScore(week:String, score:Int):Void
 	{
 		// Reminder that I don't need to format this song, it should come formatted!
 		weekScores.set(week, score);
@@ -106,7 +106,7 @@ class Highscore
 		return Paths.formatToSongPath(song) + CoolUtil.getDifficultyFilePath(diff);
 	}
 
-	public static function getScore(song:String, diff:Int):Float
+	public static function getScore(song:String, diff:Int):Int
 	{
 		var daSong:String = formatSong(song, diff);
 		if (!songScores.exists(daSong))
@@ -124,7 +124,7 @@ class Highscore
 		return songRating.get(daSong);
 	}
 
-	public static function getWeekScore(week:String, diff:Int):Float
+	public static function getWeekScore(week:String, diff:Int):Int
 	{
 		var daWeek:String = formatSong(week, diff);
 		if (!weekScores.exists(daWeek))

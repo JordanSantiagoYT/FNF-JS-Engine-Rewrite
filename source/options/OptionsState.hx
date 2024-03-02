@@ -32,7 +32,11 @@ using StringTools;
 class OptionsState extends MusicBeatState
 {
 
-	var kId = 0;
+    var kId = 0;
+    var keys:Array<FlxKey> = [D, E, B, U, G, SEVEN]; // lol
+var konamiIndex:Int = 0; // Track the progress in the Konami code sequence
+	var konamiCode = [];
+	var isEnteringKonamiCode:Bool = false;
 	var options:Array<String> = ['Note Colors', 'Controls', 'Adjust Delay and Combo', 'Graphics', 'Optimization', 'Game Rendering', 'Visuals and UI', 'Gameplay', 'Misc'];
 	private var grpOptions:FlxTypedGroup<Alphabet>;
 	private static var curSelected:Int = 0;
@@ -147,7 +151,7 @@ class OptionsState extends MusicBeatState
 			changeSelection(1);
 		}
 
-		if (controls.BACK) {
+		if (controls.BACK && !isEnteringKonamiCode) {
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 			if(PauseSubState.inPause)
 			{
@@ -158,11 +162,31 @@ class OptionsState extends MusicBeatState
 			}
 			else FlxG.switchState(MainMenuState.new);
 		}
-		if (controls.ACCEPT) {
+		if (controls.ACCEPT && !isEnteringKonamiCode) {
+			if (isEnteringKonamiCode) return;
 			openSelectedSubstate(options[curSelected]);
 		}
-	}
 
+        if (FlxG.keys.justPressed.ANY) {
+            var k = keys[kId];
+
+            if (FlxG.keys.anyJustPressed([k])) {
+                #if desktop kId++; #end
+                if (kId >= keys.length) {
+			enteringDebugMenu = true;
+			kId = 0;
+                    FlxTween.tween(FlxG.camera, {alpha: 0}, 1.5, {startDelay: 1, ease: FlxEase.cubeOut});
+                    if (FlxG.sound.music != null)
+                        FlxTween.tween(FlxG.sound.music, {pitch: 0, volume: 0}, 2.5, {ease: FlxEase.cubeOut});
+                    FlxTween.tween(FlxG.camera, {zoom: 0.1, angle: -15}, 2.5, {ease: FlxEase.cubeIn, onComplete: function(t) {
+			FlxG.camera.angle = 0;
+                        openSubState(new options.SuperSecretDebugMenu());
+                    }});
+                }
+            }
+        }
+	}
+	
 	function changeSelection(change:Int = 0) {
 		curSelected += change;
 		if (curSelected < 0)
@@ -192,4 +216,18 @@ class OptionsState extends MusicBeatState
 		}
 		FlxG.sound.play(Paths.sound('scrollMenu'));
 	}
+function checkKonamiCode():Bool {
+    if (konamiCode[konamiIndex].justPressed) {
+        konamiIndex++;
+	if (konamiIndex > 6) isEnteringKonamiCode = true;
+        if (konamiIndex >= konamiCode.length) {
+            return true;
+	    konamiIndex = 0;
+        }
+    } else { //you messed up the code
+        konamiIndex = 0;
+	isEnteringKonamiCode = false;
+    }
+    return false;
+}
 }

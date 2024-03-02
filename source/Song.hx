@@ -27,6 +27,12 @@ typedef SwagSong =
 	var stage:String;
 
 	var songCredit:String;
+	var songCreditBarPath:String;
+	var songCreditIcon:String;
+	var event7:String;
+	var event7Value:String;
+
+	var windowName:String;
 
 	var arrowSkin:String;
 	var splashSkin:String;
@@ -45,6 +51,11 @@ class Song
 	public var speed:Float = 1;
 	public var stage:String;
 	public var songCredit:String;
+	public var songCreditBarPath:String;
+	public var songCreditIcon:String;
+	public var event7:String = 'None';
+	public var event7Value:String;
+	public var windowName:String;
 	public var validScore:Bool = true;
 	public var player1:String = 'bf';
 	public var player2:String = 'dad';

@@ -7,6 +7,11 @@ import flixel.math.FlxMath;
 import flixel.util.FlxColor;
 import flash.display.BitmapData;
 import editors.ChartingState;
+import flixel.util.FlxPool;
+import flixel.math.FlxRect;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import openfl.system.System;
+import NoteShader.ColoredNoteShader;
 
 using StringTools;
 
@@ -19,8 +24,8 @@ typedef EventNote = {
 
 class Note extends FlxSprite
 {
-	public var extraData:Map<String,Dynamic> = [];
 
+	public var row:Int = 0;
 	public var strumTime:Float = 0;
 	public var mustPress:Bool = false;
 	public var noteData:Int = 0;
@@ -28,8 +33,7 @@ class Note extends FlxSprite
 	public var tooLate:Bool = false;
 	public var wasGoodHit:Bool = false;
 	public var ignoreNote:Bool = false;
-	public var hitByOpponent:Bool = false;
-	public var noteWasHit:Bool = false;
+	public var hitByOpponent:Bool = false; //For Opponent notes
 	public var prevNote:Note;
 	public var nextNote:Note;
 
@@ -59,8 +63,9 @@ class Note extends FlxSprite
 
 	public static var swagWidth:Float = 160 * 0.7;
 	
-	private var colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
-	private var pixelInt:Array<Int> = [0, 1, 2, 3];
+	public static final colArray:Array<String> = ['purple', 'blue', 'green', 'red'];
+	private final pixelInt:Array<Int> = [0, 1, 2, 3];
+	public static final beats:Array<Int> = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192,256,384,512,768,1024,1536,2048,3072,6144];
 
 	// Lua shit
 	public var noteSplashDisabled:Bool = false;
@@ -75,16 +80,30 @@ class Note extends FlxSprite
 	public var multAlpha:Float = 1;
 	public var multSpeed(default, set):Float = 1;
 
+	public var prevNoteIsSustainNote:Bool = false;
+
+	public static var SUSTAIN_SIZE:Int = 44;
+
 	public var copyX:Bool = true;
 	public var copyY:Bool = true;
+	public var copyScale:Bool = true;
 	public var copyAngle:Bool = true;
 	public var copyAlpha:Bool = true;
+
+	public var dumbHitboxThing:Bool = true;
 
 	public var hitHealth:Float = 0.023;
 	public var missHealth:Float = 0.0475;
 	public var rating:String = 'unknown';
 	public var ratingMod:Float = 0; //9 = unknown, 0.25 = shit, 0.5 = bad, 0.75 = good, 1 = sick
 	public var ratingDisabled:Bool = false;
+
+	public var strum:StrumNote = null;
+
+	public var instance:Note = null;
+
+	public var loadSprite:Bool = false;
+	public var inEkSong:Bool = false;
 
 	public var texture(default, set):String = null;
 
@@ -104,7 +123,7 @@ class Note extends FlxSprite
 
 	public function resizeByRatio(ratio:Float) //haha funny twitter shit
 	{
-		if(isSustainNote && !animation.curAnim.name.endsWith('end'))
+		if(isSustainNote && animation != null && animation.curAnim != null && !animation.curAnim.name.endsWith('end'))
 		{
 			scale.y *= ratio;
 			updateHitbox();
@@ -112,16 +131,139 @@ class Note extends FlxSprite
 	}
 
 	private function set_texture(value:String):String {
-		if(texture != value) {
+		if(texture != value && ClientPrefs.showNotes) {
 			reloadNote('', value);
 		}
 		texture = value;
 		return value;
 	}
 
+	public function quantCheck():Void 
+	{
+		if (colorSwap != null && ClientPrefs.noteColorStyle == 'Quant-Based' && !isSustainNote && (ClientPrefs.showNotes && ClientPrefs.enableColorShader))
+			{
+				var time = strumTime;
+				var theCurBPM = Conductor.bpm;
+				var stepCrochet:Float = (60 / theCurBPM) * 1000;
+				var latestBpmChangeIndex = -1;
+				var latestBpmChange = null;
+
+				for (i in 0...Conductor.bpmChangeMap.length) {
+					var bpmchange = Conductor.bpmChangeMap[i];
+					if (strumTime >= bpmchange.songTime) {
+						latestBpmChangeIndex = i; // Update index of latest change
+						latestBpmChange = bpmchange;
+					}
+				}
+				if (latestBpmChangeIndex >= 0) {
+					theCurBPM = latestBpmChange.bpm;
+					time -= latestBpmChange.songTime;
+					stepCrochet = (60 / theCurBPM) * 1000;
+				}
+
+				var beat = Math.round((time / stepCrochet) * 48);
+				for (i in 0...beats.length)
+				{
+					if (beat % (192 / beats[i]) == 0)
+					{
+						beat = beats[i];
+						break;
+					}			
+				}
+				switch (beat)
+				{
+					case 4: //red
+						colorSwap.hue = 0;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 8: //blue
+						colorSwap.hue = -0.34;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 12: //purple
+						colorSwap.hue = 0.8;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 16: //yellow
+						colorSwap.hue = 0.16;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 24: //pink
+						colorSwap.hue = 0.91;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 32: //orange
+						colorSwap.hue = 0.06;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 48: //cyan
+						colorSwap.hue = -0.53;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 64: //green
+						colorSwap.hue = -0.7;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					case 96: //salmon lookin ass
+						colorSwap.hue = 0;
+						colorSwap.saturation = -0.33;
+						colorSwap.brightness = 0;
+					case 128: //light purple shit
+						colorSwap.hue = -0.24;
+						colorSwap.saturation = -0.33;
+						colorSwap.brightness = 0;
+					case 192: //turquioe i cant spell
+						colorSwap.hue = 0.44;
+						colorSwap.saturation = 0.31;
+						colorSwap.brightness = 0;
+					case 256: //shit (the color of it)
+						colorSwap.hue = 0.03;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = -0.63;
+					case 384: //dark green ugly shit
+						colorSwap.hue = 0.29;
+						colorSwap.saturation = 1;
+						colorSwap.brightness = -0.89;
+					case 512: //darj blue
+						colorSwap.hue = -0.33;
+						colorSwap.saturation = 0.29;
+						colorSwap.brightness = -0.7;
+					case 768: //gray ok
+						colorSwap.hue = 0.04;
+						colorSwap.saturation = -0.86;
+						colorSwap.brightness = -0.23;
+					case 1024: //turqyuarfhiouhifueaig but dark
+						colorSwap.hue = 0.46;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = -0.46;
+					case 1536: //pure death
+						colorSwap.hue = 0;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = -1;
+					case 2048: //piss and shit color
+						colorSwap.hue = 0.2;
+						colorSwap.saturation = -0.36;
+						colorSwap.brightness = -0.74;
+					case 3072: //boring ass color
+						colorSwap.hue = 0.17;
+						colorSwap.saturation = -0.57;
+						colorSwap.brightness = -0.27;
+					case 6144: //why did i do this? idk tbh, it just funni
+						colorSwap.hue = 0.23;
+						colorSwap.saturation = 0.76;
+						colorSwap.brightness = -0.83;
+					default: // white/gray
+						colorSwap.hue = 0.04;
+						colorSwap.saturation = -0.86;
+						colorSwap.brightness = -0.23;
+				}
+			}
+	}
+
 	private function set_noteType(value:String):String {
 		noteSplashTexture = PlayState.SONG.splashSkin;
-		if (noteData > -1 && noteData < ClientPrefs.arrowHSV.length)
+
+		if (noteData > -1 && noteData < ClientPrefs.arrowHSV.length && ClientPrefs.noteColorStyle == 'Normal' && ClientPrefs.showNotes && ClientPrefs.enableColorShader)
 		{
 			colorSwap.hue = ClientPrefs.arrowHSV[noteData][0] / 360;
 			colorSwap.saturation = ClientPrefs.arrowHSV[noteData][1] / 100;
@@ -134,9 +276,12 @@ class Note extends FlxSprite
 					ignoreNote = mustPress;
 					reloadNote('HURT');
 					noteSplashTexture = 'HURTnoteSplashes';
-					colorSwap.hue = 0;
-					colorSwap.saturation = 0;
-					colorSwap.brightness = 0;
+					if (ClientPrefs.enableColorShader)
+					{
+						colorSwap.hue = 0;
+						colorSwap.saturation = 0;
+						colorSwap.brightness = 0;
+					}
 					lowPriority = true;
 
 					if(isSustainNote) {
@@ -145,6 +290,10 @@ class Note extends FlxSprite
 						missHealth = 0.3;
 					}
 					hitCausesMiss = true;
+				case 'Behind Note':
+					colorSwap.hue = 0;
+					colorSwap.saturation = -50;
+					colorSwap.brightness = 0;
 				case 'Alt Animation':
 					animSuffix = '-alt';
 				case 'No Animation':
@@ -155,18 +304,26 @@ class Note extends FlxSprite
 			}
 			noteType = value;
 		}
+		if (ClientPrefs.showNotes && ClientPrefs.enableColorShader)
+		{
 		noteSplashHue = colorSwap.hue;
 		noteSplashSat = colorSwap.saturation;
 		noteSplashBrt = colorSwap.brightness;
+		}
 		return value;
 	}
 
-	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?sustainNote:Bool = false, ?inEditor:Bool = false)
+	public function new(strumTime:Float, noteData:Int, ?prevNote:Note, ?noteskinToLoad:String, ?sustainNote:Bool = false, ?inEditor:Bool = false, ?loadSprite:Bool = true)
 	{
 		super();
 
+		instance = this;
+
 		if (prevNote == null)
 			prevNote = this;
+
+		this.loadSprite = loadSprite;
+		if (PlayState.instance != null && PlayState.instance.isEkSong) inEkSong = true;
 
 		this.prevNote = prevNote;
 		isSustainNote = sustainNote;
@@ -177,40 +334,119 @@ class Note extends FlxSprite
 		y -= 2000;
 		this.strumTime = strumTime;
 		if(!inEditor) this.strumTime += ClientPrefs.noteOffset;
+		var noteskin:String = noteskinToLoad;
 
 		this.noteData = noteData;
 
-		if(noteData > -1) {
-			texture = '';
-			colorSwap = new ColorSwap();
-			shader = colorSwap.shader;
+		if (!ClientPrefs.showNotes) loadNoteAnims();
 
+		if(noteData > -1) {
+			if (ClientPrefs.showNotes && loadSprite)
+			{
+			texture = ''; 
+			if (noteskin != null && noteskin != '') texture = "noteskins/" + noteskin;
+			if(ClientPrefs.noteStyleThing == 'VS Nonsense V2') {
+				texture = 'Nonsense_NOTE_assets';
+			}
+			if(ClientPrefs.noteStyleThing == 'DNB 3D') {
+				texture = 'NOTE_assets_3D';
+			}
+			if(ClientPrefs.noteStyleThing == 'VS AGOTI') {
+				texture = 'AGOTINOTE_assets';
+			}
+			if(ClientPrefs.noteStyleThing == 'Doki Doki+') {
+				texture = 'NOTE_assets_doki';
+			}
+			if(ClientPrefs.noteStyleThing == 'TGT V4') {
+				texture = 'TGTNOTE_assets';
+			}
+			if (ClientPrefs.noteStyleThing != 'VS Nonsense V2' && ClientPrefs.noteStyleThing != 'DNB 3D' && ClientPrefs.noteStyleThing != 'VS AGOTI' && ClientPrefs.noteStyleThing != 'Doki Doki+' && ClientPrefs.noteStyleThing != 'TGT V4' && ClientPrefs.noteStyleThing != 'Default') {
+				texture = 'NOTE_assets_' + ClientPrefs.noteStyleThing.toLowerCase();
+			}
+			if(ClientPrefs.noteColorStyle == 'Quant-Based' || ClientPrefs.noteColorStyle == 'Rainbow') {
+				texture = ClientPrefs.noteStyleThing == 'TGT V4' ? 'RED_TGTNOTE_assets' : 'RED_NOTE_assets';
+			}
+			if(ClientPrefs.noteColorStyle == 'Char-Based') {
+				texture = 'NOTE_assets_colored';
+			}
+			if(ClientPrefs.noteColorStyle == 'Grayscale') {
+				texture = 'GRAY_NOTE_assets';
+			}
+			if (ClientPrefs.enableColorShader)
+			{
+					colorSwap = new ColorSwap();
+					shader = colorSwap.shader;
+					if (ClientPrefs.noteColorStyle == 'Normal' && noteData < ClientPrefs.arrowHSV.length) //the notedata check prevents a null object reference when loading ek lua charts
+					{
+						colorSwap.hue = ClientPrefs.arrowHSV[noteData][0] / 360;
+						colorSwap.saturation = ClientPrefs.arrowHSV[noteData][1] / 100;
+						colorSwap.brightness = ClientPrefs.arrowHSV[noteData][2] / 100;
+					}
+					if (ClientPrefs.noteColorStyle == 'Rainbow')
+					{
+						colorSwap.hue = ((strumTime / 5000 * 360) / 360) % 1;
+					}
+				if (ClientPrefs.noteColorStyle == 'Char-Based')
+				{
+					if (PlayState.instance != null) {
+ 						if (!mustPress) !PlayState.opponentChart ? this.shader = new ColoredNoteShader(PlayState.instance.dad.healthColorArray[0], PlayState.instance.dad.healthColorArray[1], PlayState.instance.dad.healthColorArray[2], false, 10) : this.shader = new ColoredNoteShader(PlayState.instance.boyfriend.healthColorArray[0], PlayState.instance.boyfriend.healthColorArray[1], PlayState.instance.boyfriend.healthColorArray[2], false, 10);
+						if (mustPress) {
+							!PlayState.opponentChart ? this.shader = new ColoredNoteShader(PlayState.instance.boyfriend.healthColorArray[0], PlayState.instance.boyfriend.healthColorArray[1], PlayState.instance.boyfriend.healthColorArray[2], false, 10) : this.shader = new ColoredNoteShader(PlayState.instance.dad.healthColorArray[0], PlayState.instance.dad.healthColorArray[1], PlayState.instance.dad.healthColorArray[2], false, 10);
+						}
+						if (gfNote) {
+						if (PlayState.instance.gf != null) this.shader = new ColoredNoteShader(PlayState.instance.gf.healthColorArray[0], PlayState.instance.gf.healthColorArray[1], PlayState.instance.gf.healthColorArray[2], false, 10);
+						}
+					}
+				}
+			}
+			}
 			x += swagWidth * (noteData);
 			if(!isSustainNote && noteData > -1 && noteData < 4) { //Doing this 'if' check to fix the warnings on Senpai songs
-				var animToPlay:String = '';
-				animToPlay = colArray[noteData % 4];
+				final animToPlay:String = colArray[noteData % 4];
 				animation.play(animToPlay + 'Scroll');
 			}
 		}
 
-		// trace(prevNote);
-
 		if(prevNote!=null)
 			prevNote.nextNote = this;
+
+		switch (ClientPrefs.healthGainType)
+		{
+			case 'Leather Engine':
+				missHealth = 0.07;
+			case 'Kade (1.4.2 to 1.6)':
+				missHealth = 0.075;
+			case 'Kade (1.6+)':
+				missHealth = 0.075;
+			case 'Doki Doki+':
+				missHealth = 0.04;
+			default:
+				missHealth = 0.0475;
+		}
 
 		if (isSustainNote && prevNote != null)
 		{
 			alpha = 0.6;
 			multAlpha = 0.6;
 			hitsoundDisabled = true;
-			if(ClientPrefs.downScroll) flipY = true;
+			flipY = ClientPrefs.downScroll;
+			prevNoteIsSustainNote = prevNote.isSustainNote;
 
 			offsetX += width / 2;
 			copyAngle = false;
 
 			animation.play(colArray[noteData % 4] + 'holdend');
+			if (ClientPrefs.showNotes)
+			{
+				if (ClientPrefs.noteColorStyle == 'Quant-Based' && ClientPrefs.enableColorShader)
+				{
+				colorSwap.hue = prevNote.colorSwap.hue;
+				colorSwap.saturation = prevNote.colorSwap.saturation;
+				colorSwap.brightness = prevNote.colorSwap.brightness;
+				}
 
 			updateHitbox();
+			}
 
 			offsetX -= width / 2;
 
@@ -241,13 +477,17 @@ class Note extends FlxSprite
 			}
 		} else if(!isSustainNote) {
 			earlyHitMult = 1;
+			centerOffsets();
+			centerOrigin();
 		}
 		x += offsetX;
+		if (ClientPrefs.noteColorStyle == 'Quant-Based' && ClientPrefs.showNotes && ClientPrefs.enableColorShader) quantCheck();
 	}
 
 	var lastNoteOffsetXForPixelAutoAdjusting:Float = 0;
 	var lastNoteScaleToo:Float = 1;
 	public var originalHeightForCalcs:Float = 6;
+	public var correctionOffset:Float = 0; //dont mess with this
 	function reloadNote(?prefix:String = '', ?texture:String = '', ?suffix:String = '') {
 		if(prefix == null) prefix = '';
 		if(texture == null) texture = '';
@@ -255,7 +495,7 @@ class Note extends FlxSprite
 
 		var skin:String = texture;
 		if(texture.length < 1) {
-			skin = PlayState.SONG.arrowSkin;
+			if (PlayState.instance != null) skin = PlayState.SONG.arrowSkin;
 			if(skin == null || skin.length < 1) {
 				skin = 'NOTE_assets';
 			}
@@ -303,6 +543,11 @@ class Note extends FlxSprite
 		} else {
 			frames = Paths.getSparrowAtlas(blahblah);
 			loadNoteAnims();
+			if(!isSustainNote)
+			{
+				centerOffsets();
+				centerOrigin();
+			}
 			antialiasing = ClientPrefs.globalAntialiasing;
 		}
 		if(isSustainNote) {
@@ -342,9 +587,39 @@ class Note extends FlxSprite
 		}
 	}
 
-	override function update(elapsed:Float) {
-		if (ClientPrefs.ffmpegMode) elapsed = 1 / ClientPrefs.targetFPS;
+	public function updateNoteSkin(noteskin:String) {
+			if (noteskin != null && noteskin != '') texture = "noteskins/" + noteskin;
+			if(ClientPrefs.noteStyleThing == 'VS Nonsense V2') {
+				texture = 'Nonsense_NOTE_assets';
+			}
+			if(ClientPrefs.noteStyleThing == 'DNB 3D') {
+				texture = 'NOTE_assets_3D';
+			}
+			if(ClientPrefs.noteStyleThing == 'VS AGOTI') {
+				texture = 'AGOTINOTE_assets';
+			}
+			if(ClientPrefs.noteStyleThing == 'Doki Doki+') {
+				texture = 'NOTE_assets_doki';
+			}
+			if(ClientPrefs.noteStyleThing == 'TGT V4') {
+				texture = 'TGTNOTE_assets';
+			}
+			if (ClientPrefs.noteStyleThing != 'VS Nonsense V2' && ClientPrefs.noteStyleThing != 'DNB 3D' && ClientPrefs.noteStyleThing != 'VS AGOTI' && ClientPrefs.noteStyleThing != 'Doki Doki+' && ClientPrefs.noteStyleThing != 'TGT V4' && ClientPrefs.noteStyleThing != 'Default') {
+				texture = 'NOTE_assets_' + ClientPrefs.noteStyleThing.toLowerCase();
+			}
+			if(ClientPrefs.noteColorStyle == 'Quant-Based' || ClientPrefs.noteColorStyle == 'Rainbow') {
+				texture = ClientPrefs.noteStyleThing == 'TGT V4' ? 'RED_TGTNOTE_assets' : 'RED_NOTE_assets';
+			}
+			if(ClientPrefs.noteColorStyle == 'Char-Based') {
+				texture = 'NOTE_assets_colored';
+			}
+			if(ClientPrefs.noteColorStyle == 'Grayscale') {
+				texture = 'GRAY_NOTE_assets';
+			}
+	}
 
+	override function update(elapsed:Float)
+	{
 		super.update(elapsed);
 
 		if (mustPress)
@@ -355,6 +630,9 @@ class Note extends FlxSprite
 				canBeHit = true;
 			else
 				canBeHit = false;
+
+			if (strumTime < Conductor.songPosition - Conductor.safeZoneOffset && !wasGoodHit)
+				tooLate = true;
 		}
 		else
 		{
@@ -364,7 +642,6 @@ class Note extends FlxSprite
 			{
 				if((isSustainNote && prevNote.wasGoodHit) || strumTime <= Conductor.songPosition)
 					wasGoodHit = true;
-
 			}
 		}
 
@@ -375,19 +652,85 @@ class Note extends FlxSprite
 		}
 	}
 
-	// This function is over with
-	/*public static function setupNoteData(sectionNote:Array<Dynamic>, prevNote:Note, sustainNote:Bool = false,
-		mustHitSection:Bool = false, gfSection:Bool = false):Note {
-		var dunceNote = new Note(sectionNote[0], sectionNote[1], prevNote, sustainNote);
-		dunceNote.mustPress = mustHitSection || sectionNote[1] > 3;
-		dunceNote.sustainLength = Math.abs(sectionNote[2]);
-		dunceNote.noteType = sectionNote[3];
-		dunceNote.gfNote = gfSection && !dunceNote.mustPress;
-		if (dunceNote.prevNote != null && dunceNote.prevNote.isSustainNote) {
-			dunceNote.prevNote.animation.play(dunceNote.prevNote.colArray[prevNote.noteData] + 'hold');
-			dunceNote.prevNote.alpha = dunceNote.alpha;
-			dunceNote.prevNote.multAlpha = dunceNote.multAlpha;
+	public function followStrumNote(strum:StrumNote, fakeCrochet:Float, songSpeed:Float = 1)
+	{
+		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
+		if (!strum.downScroll) distance *= -1;
+
+						if(animation != null && animation.curAnim != null && animation.curAnim.name.endsWith('end'))
+						{
+							y -= height-2;
+							if (!prevNoteIsSustainNote) //only for really short sustains that only have an end and no regular parts
+							{
+								y += height*0.25; //move back down slightly into the note
+							}
+						}
+
+		if(copyScale && isSustainNote)
+			if (!dumbHitboxThing)
+				updateHitbox();
+
+		if (copyAngle)
+			angle = strum.direction - 90 + strum.angle + offsetAngle;
+
+		if(copyAlpha)
+			alpha = strum.alpha * multAlpha;
+
+		if(copyX)
+			x = strum.x + offsetX + Math.cos(strum.direction * Math.PI / 180) * distance;
+
+		if(copyY)
+		{
+			y = strum.y + offsetY + correctionOffset + Math.sin(strum.direction * Math.PI / 180) * distance;
+			if(strum.downScroll && isSustainNote)
+			{
+				if(PlayState.isPixelStage)
+				{
+					y -= PlayState.daPixelZoom * 9.5;
+				}
+				y -= (frameHeight * scale.y) - (Note.swagWidth / 2);
+			}
 		}
-		return dunceNote;
-	}*/
+	}
+
+	public function clipToStrumNote(myStrum:StrumNote)
+	{
+					// From 0.7+
+					final center = strum.y + (Note.swagWidth * 0.5);
+					var playerClipRectCheck:Bool = mustPress && isSustainNote && (wasGoodHit && prevNote.wasGoodHit || !tooLate) &&
+						(PlayState.instance.parseKeys()[noteData] || animation.curAnim.name.endsWith('end') || PlayState.instance.cpuControlled);
+					var opponentClipRectCheck:Bool = !mustPress && isSustainNote;
+					if (playerClipRectCheck || opponentClipRectCheck)
+					{
+						var swagRect:FlxRect = clipRect;
+						if(swagRect == null) swagRect = new FlxRect(0, 0, frameWidth, frameHeight);
+
+						if (strum.downScroll)
+						{
+							if(y - offset.y * scale.y + height >= center)
+							{
+								swagRect.width = frameWidth;
+								swagRect.height = (center - y) / scale.y;
+								swagRect.y = frameHeight - swagRect.height;
+							}
+						}
+						else if (y + offset.y * scale.y <= center)
+						{
+							swagRect.y = (center - y) / scale.y;
+							swagRect.width = width / scale.x;
+							swagRect.height = (height / scale.y) - swagRect.y;
+						}
+						clipRect = swagRect;
+					}
+	}
+	public function updateRGBColors() {
+        	if (Std.isOfType(this.shader, ColoredNoteShader))
+		{
+			if (mustPress)
+	    			!PlayState.opponentChart ? cast(this.shader, ColoredNoteShader).setColors(PlayState.instance.boyfriend.healthColorArray[0], PlayState.instance.boyfriend.healthColorArray[1], PlayState.instance.boyfriend.healthColorArray[2]) : cast(this.shader, ColoredNoteShader).setColors(PlayState.instance.dad.healthColorArray[0], PlayState.instance.dad.healthColorArray[1], PlayState.instance.dad.healthColorArray[2]);
+	    		else if (!gfNote) 
+				!PlayState.opponentChart ? cast(this.shader, ColoredNoteShader).setColors(PlayState.instance.dad.healthColorArray[0], PlayState.instance.dad.healthColorArray[1], PlayState.instance.dad.healthColorArray[2]) : cast(this.shader, ColoredNoteShader).setColors(PlayState.instance.boyfriend.healthColorArray[0], PlayState.instance.boyfriend.healthColorArray[1], PlayState.instance.boyfriend.healthColorArray[2]);
+	    		else if (gfNote && PlayState.instance.gf != null) cast(this.shader, ColoredNoteShader).setColors(PlayState.instance.gf.healthColorArray[0], PlayState.instance.gf.healthColorArray[1], PlayState.instance.gf.healthColorArray[2]);
+		}
+	}
 }
