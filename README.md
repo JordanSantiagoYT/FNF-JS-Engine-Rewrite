@@ -1,3 +1,4 @@
+# Note: This is the repository for the rewritten JS Engine. If you're looking for the pre-rewrite version, go [here!](https://github.com/JordanSantiagoYT/FNF-PsychEngine-NoBotplayLag)
 <h1 align="center">
   <br>
   <a href="https://github.com/JordanSantiagoYT/FNF-PsychEngine-NoBotplayLag"><img src="assets/exclude/images/jslol.png" alt="JSengine" width="150"></a>
